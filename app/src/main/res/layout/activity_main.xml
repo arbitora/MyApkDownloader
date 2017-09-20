@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.widget.LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.collapick_trainee.myapkdownloader.MainActivity">
+
+    <Button
+        android:id="@+id/DownloadStart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="true"
+        android:onClick="onClickDownload"
+        android:text="@string/btn_startDownload" />
+
+    <Button
+        android:id="@+id/DownloadStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:onClick="onClickStatus"
+        android:text="@string/btn_downloadStatus" />
+
+    <Button
+        android:id="@+id/CancelDownload"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:onClick="onClickCancel"
+        android:text="@string/btn_cancelDownload" />
+
+</android.widget.LinearLayout>
