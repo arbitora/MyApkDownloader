@@ -2,6 +2,7 @@ package com.example.collapick_trainee.myapkdownloader;
 
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -55,13 +56,17 @@ public class MainActivity extends AppCompatActivity {
                 if (referenceId == apkDownloadReferenceID){
                     // APK Download found, check that the download
 
+                    boolean updateFound = false;
+                    String downloadLocalUri = "null";
+                    String downloadMimeType = "null";
+
                     // Send the query to download manager which returns a cursor.
                     Cursor cursor = getDownloadIdCursor(apkDownloadReferenceID);
 
                     if(cursor.moveToFirst()){
                         int columnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
-                        String downloadLocalUri = cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI));
-                        String downloadMimeType = cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_MEDIA_TYPE));
+                        downloadLocalUri = cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI));
+                        downloadMimeType = cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_MEDIA_TYPE));
                         int status = cursor.getInt(columnIndex);
 
                         // Check that the download is successful.
@@ -77,7 +82,8 @@ public class MainActivity extends AppCompatActivity {
                             btnStartDownload.setEnabled(true);
                             isDownloading = false;
 
-                            openApkInstallation(context, Uri.parse(downloadLocalUri), downloadMimeType);
+                            // Allow updating
+                            updateFound = true;
                         }
                         else{
                             // Possible error in download.
@@ -98,6 +104,9 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     cursor.close(); // Close cursor.
+                    // Start installation if update found and Uri and MimeType are not "null"
+                    if (updateFound && !downloadLocalUri.equals("null") && !downloadMimeType.equals("null"))
+                        openApkInstallation(context, Uri.parse(downloadLocalUri), downloadMimeType);
 
                 }
             }
@@ -226,8 +235,9 @@ public class MainActivity extends AppCompatActivity {
         int columnReason = cursor.getColumnIndex(DownloadManager.COLUMN_REASON);
         int reason = cursor.getInt(columnReason);
         // Gets the downloaded file name from the column.
-        int filenameIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME);
-        String filename = cursor.getString(filenameIndex);
+        int localUriIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
+        String localUri = cursor.getString(localUriIndex);
+        String filename = localUri.substring(localUri.lastIndexOf("/") + 1, localUri.length());
 
         String statusText = "";
         String reasonText = "";
@@ -315,11 +325,12 @@ public class MainActivity extends AppCompatActivity {
 
         // Create a file and use FileProvider to create Uri and pass that to Intent.
         File myApkFile = new File(apkUri);
-        Uri fileUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID + ".provider", myApkFile);
+        Uri fileUri = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", myApkFile);
 
-        installationIntent = installationIntent.setDataAndType(fileUri, mimeType);
+        installationIntent = installationIntent.setData(fileUri);
 
-        installationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        installationIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        //installationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(installationIntent);
     }
 
