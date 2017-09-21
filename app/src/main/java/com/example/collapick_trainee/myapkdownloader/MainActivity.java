@@ -10,6 +10,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -65,7 +66,6 @@ public class MainActivity extends AppCompatActivity {
 
                         // Check that the download is successful.
                         if (status == DownloadManager.STATUS_SUCCESSFUL && downloadLocalUri != null){
-
                             Toast toast = Toast.makeText(MainActivity.this,
                                     R.string.text_downloadComplete, Toast.LENGTH_LONG);
                             toast.setGravity(Gravity.TOP, 25, 400);
@@ -77,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
                             btnStartDownload.setEnabled(true);
                             isDownloading = false;
 
-                            // TODO: Start installation intent.
                             openApkInstallation(context, Uri.parse(downloadLocalUri), downloadMimeType);
                         }
                         else{
@@ -299,10 +298,26 @@ public class MainActivity extends AppCompatActivity {
         return statusText + "\n" + reasonText;
     }
 
-
+    /*
+        Takes in context (MainActivity.this for example), Uri location from downloadManager
+        and mimeType is the type
+     */
     private void openApkInstallation(Context context, Uri downloadedUri, String mimeType){
-        Intent installationIntent = new Intent(Intent.ACTION_VIEW);
-        installationIntent = installationIntent.setDataAndType(downloadedUri,"application/vnd.android.package-archive");
+        Intent installationIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+
+        // DownloadManager uri needs to be given to FileProvider.
+        // But before we pass it, we need to remove file:// prefix from it.
+
+        String apkUri = downloadedUri.toString(); // Temporary string change.
+        if (apkUri.substring(0,7).matches("file://")){
+            apkUri = apkUri.substring(7);
+        }
+
+        // Create a file and use FileProvider to create Uri and pass that to Intent.
+        File myApkFile = new File(apkUri);
+        Uri fileUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID + ".provider", myApkFile);
+
+        installationIntent = installationIntent.setDataAndType(fileUri, mimeType);
 
         installationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(installationIntent);
