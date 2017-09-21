@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.content.FileProvider;
@@ -313,25 +314,37 @@ public class MainActivity extends AppCompatActivity {
         and mimeType is the type
      */
     private void openApkInstallation(Context context, Uri downloadedUri, String mimeType){
-        Intent installationIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
 
-        // DownloadManager uri needs to be given to FileProvider.
-        // But before we pass it, we need to remove file:// prefix from it.
+        // Nougat (API 24=<), use File Provider method.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+            Intent installationIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
 
-        String apkUri = downloadedUri.toString(); // Temporary string change.
-        if (apkUri.substring(0,7).matches("file://")){
-            apkUri = apkUri.substring(7);
+            // DownloadManager uri needs to be given to FileProvider.
+            // But before we pass it, we need to remove file:// prefix from it.
+
+            String apkUri = downloadedUri.toString(); // Temporary string change.
+            if (apkUri.substring(0,7).matches("file://")){
+                apkUri = apkUri.substring(7);
+            }
+
+            // Create a file and use FileProvider to create Uri and pass that to Intent.
+            File myApkFile = new File(apkUri);
+            Uri fileUri = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", myApkFile);
+
+            installationIntent = installationIntent.setData(fileUri);
+
+            installationIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(installationIntent);
+        }
+        // Otherwise use old file:/// path.
+        else{
+            Intent installationIntent = new Intent(Intent.ACTION_VIEW);
+            installationIntent = installationIntent.setDataAndType(downloadedUri,"application/vnd.android.package-archive");
+
+            installationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(installationIntent);
         }
 
-        // Create a file and use FileProvider to create Uri and pass that to Intent.
-        File myApkFile = new File(apkUri);
-        Uri fileUri = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", myApkFile);
-
-        installationIntent = installationIntent.setData(fileUri);
-
-        installationIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        //installationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(installationIntent);
     }
 
     // Returns a string with the application name
